@@ -1,6 +1,9 @@
 # NeuroFly Requirements
 # Python 3.10+
 
+# Simulation
+-e ./gym-pybullet-drones
+
 # NEAT Algorithm
 neat-python==1.0.0
 
