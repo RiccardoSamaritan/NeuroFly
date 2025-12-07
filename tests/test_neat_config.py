@@ -4,14 +4,7 @@ Test for NEAT configuration.
 import os
 import pytest
 import neat
-
-
-def get_config_path():
-    """Get path to NEAT config file relative to project root."""
-    test_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(test_dir)
-    config_path = os.path.join(project_root, "config-drone")
-    return config_path
+from utils import get_config_path
 
 def test_config_file_exists():
     """Test that NEAT config file exists."""
