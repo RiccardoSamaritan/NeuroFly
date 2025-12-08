@@ -4,7 +4,7 @@ Test for NEAT configuration.
 import os
 import pytest
 import neat
-from utils import get_config_path
+from tests.utils import get_config_path
 
 def test_config_file_exists():
     """Test that NEAT config file exists."""
