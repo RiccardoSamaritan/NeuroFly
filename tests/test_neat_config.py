@@ -64,6 +64,3 @@ def test_config_population_size():
     assert pop_size > 0, f"Expected pop_size > 0, got {pop_size}"
     assert pop_size >= 10, f"Population too small: {pop_size}, recommend >= 10"
 
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

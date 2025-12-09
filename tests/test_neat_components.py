@@ -6,7 +6,6 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pybullet-drones'))
 
 import numpy as np
-import pytest
 import neat
 from gym_pybullet_drones.envs.HoverAviary import HoverAviary
 from tests.utils import initialize_population

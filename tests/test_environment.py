@@ -6,9 +6,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pybullet-drones'))
 
 import numpy as np
-import pytest
 from gym_pybullet_drones.envs.HoverAviary import HoverAviary
-from gym_pybullet_drones.utils.enums import DroneModel, Physics, ActionType, ObservationType
+from gym_pybullet_drones.utils.enums import ActionType, ObservationType
 
 
 def test_hoveraviary_creation():
@@ -101,7 +100,3 @@ def test_episode_termination():
         f"Episode did not terminate: terminated={terminated}, truncated={truncated}, step={step}"
 
     env.close()
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

@@ -5,11 +5,76 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pybullet-drones'))
 
-import pytest
-import neat
-from gym_pybullet_drones.envs.HoverAviary import HoverAviary
+import numpy as np
+from gym_pybullet_drones.utils.enums import DroneModel, Physics, ActionType, ObservationType
 from src.neat.drone_evaluator import DroneEvaluator
 from tests.utils import initialize_population
+
+
+def test_get_env_config():
+    """Test that _get_env_config returns correct configuration."""
+    evaluator = DroneEvaluator(gui=False)
+    config = evaluator._get_env_config()
+
+    assert isinstance(config, dict), "Config should be a dictionary"
+    assert config["gui"] == False, "GUI should be False"
+    assert config["drone_model"] == DroneModel.CF2X, "Drone model should be CF2X"
+    assert config["physics"] == Physics.PYB, "Physics should be PYB"
+    assert config["obs"] == ObservationType.KIN, "Observation type should be KIN"
+    assert config["act"] == ActionType.RPM, "Action type should be RPM"
+
+
+def test_map_action_zero():
+    """Test mapping of zero output (middle of range)."""
+    evaluator = DroneEvaluator(gui=False)
+    output = [0.0, 0.0, 0.0, 0.0]
+
+    action = evaluator._map_action(output)
+
+    expected_rpm = evaluator.MAX_RPM / 2.0
+    assert action.shape == (1, 4), f"Expected shape (1, 4), got {action.shape}"
+    np.testing.assert_allclose(action[0], [expected_rpm] * 4, rtol=1e-5)
+
+
+def test_calculate_fitness_with_reward():
+    """Test fitness calculation with reward."""
+    evaluator = DroneEvaluator(gui=False)
+
+    fitness = evaluator._calculate_fitness(
+        total_reward=42.5,
+        steps=150,
+        max_steps=200
+    )
+
+    # Fitness = 42.5 + (150/200) * 100 = 117.5
+    expected = 117.5
+    assert fitness == expected, f"Expected fitness {expected}, got {fitness}"
+
+
+def test_map_action_min_max():
+    """Test mapping of minimum and maximum outputs."""
+    evaluator = DroneEvaluator(gui=False)
+
+    action_min = evaluator._map_action([-1.0, -1.0, -1.0, -1.0])
+    np.testing.assert_allclose(action_min[0], [0.0] * 4, rtol=1e-5)
+
+    action_max = evaluator._map_action([1.0, 1.0, 1.0, 1.0])
+    np.testing.assert_allclose(action_max[0], [evaluator.MAX_RPM] * 4, rtol=1e-5)
+
+
+def test_calculate_fitness_no_reward():
+    """Test fitness calculation with zero reward."""
+    evaluator = DroneEvaluator(gui=False)
+
+    fitness = evaluator._calculate_fitness(
+        total_reward=0.0,
+        steps=100,
+        max_steps=200
+    )
+
+    # Fitness = 0 + (100/200) * 100 = 50
+    expected = 50.0
+    assert fitness == expected, f"Expected fitness {expected}, got {fitness}"
 
 
 def test_evaluator_initialization():
@@ -61,6 +126,3 @@ def test_fitness_deterministic():
     # Should get same fitness (deterministic environment)
     assert fitness1 == fitness2, f"Expected deterministic fitness, got {fitness1} and {fitness2}"
 
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
