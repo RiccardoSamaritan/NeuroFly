@@ -37,6 +37,27 @@ NeuroFly/
 ├── train_drone.py                 # Main training script
 ├── test_genome.py                 # Test genome with GUI
 ```
+## Perfomance
+
+### Drone Hovering after 3 generations
+
+![Adobe Express - 3generations](https://github.com/user-attachments/assets/bbabde7b-39cf-4209-87c6-c836834ca711)
+
+### Drone Hovering after 10 generations
+
+![Adobe Express - 10generations](https://github.com/user-attachments/assets/d0989f50-230f-42d9-bc90-091134e1d252)
+
+### Drone Hovering after 15 generations
+
+![Adobe Express - 15generations](https://github.com/user-attachments/assets/b5f2e4b8-c67a-4979-b245-3ad1e024c7c8)
+
+### Drone Hovering after 25 generations
+
+![Adobe Express - 25generations](https://github.com/user-attachments/assets/0f11b23b-6f42-4d25-924f-4daa54af896e)
+
+### Drone Hovering after 50 generations
+
+![Adobe Express - 50generations](https://github.com/user-attachments/assets/d504ed50-8580-47de-927f-caeace681673)
 
 ## Setup
 
