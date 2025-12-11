@@ -2,8 +2,9 @@
 Test for HoverAviary environment from gym-pybullet-drones
 """
 import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pybullet-drones'))
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "gym-pybullet-drones"))
 
 import numpy as np
 from gym_pybullet_drones.envs.HoverAviary import HoverAviary

@@ -2,8 +2,9 @@
 Test for DroneEvaluator: complete episode evaluation with fitness calculation.
 """
 import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pybullet-drones'))
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "gym-pybullet-drones"))
 
 import numpy as np
 from gym_pybullet_drones.utils.enums import DroneModel, Physics, ActionType, ObservationType
@@ -21,60 +22,35 @@ def test_get_env_config():
     assert config["drone_model"] == DroneModel.CF2X, "Drone model should be CF2X"
     assert config["physics"] == Physics.PYB, "Physics should be PYB"
     assert config["obs"] == ObservationType.KIN, "Observation type should be KIN"
-    assert config["act"] == ActionType.RPM, "Action type should be RPM"
+    assert config["act"] == ActionType.PID, "Action type should be PID"
 
 
 def test_map_action_zero():
-    """Test mapping of zero output (middle of range)."""
+    """Test mapping of zero output to target position."""
     evaluator = DroneEvaluator(gui=False)
-    output = [0.0, 0.0, 0.0, 0.0]
+    output = [0.0, 0.0, 0.0]
+    current_pos = np.array([0.0, 0.0, 0.5])
 
-    action = evaluator._map_action(output)
+    action = evaluator._map_action(output, current_pos)
 
-    expected_rpm = evaluator.MAX_RPM / 2.0
-    assert action.shape == (1, 4), f"Expected shape (1, 4), got {action.shape}"
-    np.testing.assert_allclose(action[0], [expected_rpm] * 4, rtol=1e-5)
+    # With zero output, target should be [0, 0, 1] (TARGET_POS)
+    expected_target = np.array([0.0, 0.0, 1.0])
+    assert action.shape == (1, 3), f"Expected shape (1, 3), got {action.shape}"
+    np.testing.assert_allclose(action[0], expected_target, rtol=1e-5)
 
 
-def test_calculate_fitness_with_reward():
-    """Test fitness calculation with reward."""
+def test_map_action_with_offset():
+    """Test mapping of output with offset."""
     evaluator = DroneEvaluator(gui=False)
+    output = [1.0, -1.0, 0.5]  # Max x, min y, half z
+    current_pos = np.array([0.0, 0.0, 0.5])
 
-    fitness = evaluator._calculate_fitness(
-        total_reward=42.5,
-        steps=150,
-        max_steps=200
-    )
+    action = evaluator._map_action(output, current_pos)
 
-    # Fitness = 42.5 + (150/200) * 100 = 117.5
-    expected = 117.5
-    assert fitness == expected, f"Expected fitness {expected}, got {fitness}"
-
-
-def test_map_action_min_max():
-    """Test mapping of minimum and maximum outputs."""
-    evaluator = DroneEvaluator(gui=False)
-
-    action_min = evaluator._map_action([-1.0, -1.0, -1.0, -1.0])
-    np.testing.assert_allclose(action_min[0], [0.0] * 4, rtol=1e-5)
-
-    action_max = evaluator._map_action([1.0, 1.0, 1.0, 1.0])
-    np.testing.assert_allclose(action_max[0], [evaluator.MAX_RPM] * 4, rtol=1e-5)
-
-
-def test_calculate_fitness_no_reward():
-    """Test fitness calculation with zero reward."""
-    evaluator = DroneEvaluator(gui=False)
-
-    fitness = evaluator._calculate_fitness(
-        total_reward=0.0,
-        steps=100,
-        max_steps=200
-    )
-
-    # Fitness = 0 + (100/200) * 100 = 50
-    expected = 50.0
-    assert fitness == expected, f"Expected fitness {expected}, got {fitness}"
+    # Target = [0, 0, 1] + [0.2, -0.2, 0.1] = [0.2, -0.2, 1.1]
+    expected_target = np.array([0.2, -0.2, 1.1])
+    assert action.shape == (1, 3), f"Expected shape (1, 3), got {action.shape}"
+    np.testing.assert_allclose(action[0], expected_target, rtol=1e-5)
 
 
 def test_evaluator_initialization():

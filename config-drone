@@ -1,14 +1,14 @@
 [NEAT]
 fitness_criterion     = max
-fitness_threshold     = 1000.0
-pop_size              = 50
+fitness_threshold     = 850.0
+pop_size              = 150
 reset_on_extinction   = False
 no_fitness_termination = False
 
 [DefaultGenome]
 # node activation options
 activation_default      = tanh
-activation_mutate_rate  = 0.0
+activation_mutate_rate  = 0.05
 activation_options      = tanh
 
 # node aggregation options
@@ -31,8 +31,8 @@ compatibility_disjoint_coefficient = 1.0
 compatibility_weight_coefficient   = 0.5
 
 # connection add/remove rates
-conn_add_prob           = 0.5
-conn_delete_prob        = 0.5
+conn_add_prob           = 0.08
+conn_delete_prob        = 0.02
 
 # connection enable options
 enabled_default         = True
@@ -40,17 +40,17 @@ enabled_mutate_rate     = 0.01
 enabled_rate_to_true_add  = 0.0
 enabled_rate_to_false_add = 0.0
 
-feed_forward            = True
-initial_connection      = full
+feed_forward            = False
+initial_connection      = partial_direct 0.5
 
 # node add/remove rates
-node_add_prob           = 0.2
-node_delete_prob        = 0.2
+node_add_prob           = 0.05
+node_delete_prob        = 0.02
 
 # network parameters
-num_hidden              = 0
-num_inputs              = 72
-num_outputs             = 4
+num_hidden              = 1
+num_inputs              = 6
+num_outputs             = 3  
 
 # node response options
 response_init_mean      = 1.0

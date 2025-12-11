@@ -44,8 +44,8 @@ def test_config_input_output():
     num_inputs = config.genome_config.num_inputs
     num_outputs = config.genome_config.num_outputs
 
-    assert num_inputs > 0, f"Expected num_inputs > 0, got {num_inputs}"
-    assert num_outputs == 4, f"Expected 4 outputs (motors), got {num_outputs}"
+    assert num_inputs == 6, f"Expected 6 inputs (error_pos + drone_vel), got {num_inputs}"
+    assert num_outputs == 3, f"Expected 3 outputs (target x,y,z for PID), got {num_outputs}"
 
 
 def test_config_population_size():

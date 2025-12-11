@@ -7,9 +7,5 @@
 # NEAT Algorithm
 neat-python==1.0.0
 
-# Visualization (optional)
-matplotlib>=3.5.0
-graphviz
-
 # Testing
 pytest>=7.3.0

@@ -2,8 +2,9 @@
 Test NEAT genome and network creation and functionality with HoverAviary environment.
 """
 import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pybullet-drones'))
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "gym-pybullet-drones"))
 
 import numpy as np
 import neat
@@ -41,11 +42,11 @@ def test_network_input_output_dimensions():
     genome_id, genome = list(pop.population.items())[0]
     net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    # Test with 72 inputs (HoverAviary observation size)
-    input_data = np.random.randn(72).tolist()
+    # Test with 6 inputs (error_pos + drone_vel)
+    input_data = np.random.randn(6).tolist()
     output = net.activate(input_data)
 
-    assert len(output) == 4, f"Expected 4 outputs, got {len(output)}"
+    assert len(output) == 3, f"Expected 3 outputs, got {len(output)}"
     assert all(isinstance(o, (int, float)) for o in output), "Output values must be numeric"
 
 
@@ -58,7 +59,7 @@ def test_network_output_range():
 
     # Test multiple random inputs
     for _ in range(10):
-        input_data = np.random.randn(72).tolist()
+        input_data = np.random.randn(6).tolist()
         output = net.activate(input_data)
 
         for o in output:
@@ -66,27 +67,35 @@ def test_network_output_range():
 
 
 def test_evaluate_genome_single_step():
-    """Test that we can evaluate a genome for one step in HoverAviary."""
+    """Test that we can evaluate a genome for one step in HoverAviary with PID."""
     pop, config = initialize_population()
 
     genome_id, genome = list(pop.population.items())[0]
     net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    # Create environment
-    env = HoverAviary(gui=False)
+    # Create environment with PID action
+    from gym_pybullet_drones.utils.enums import ActionType
+    env = HoverAviary(gui=False, act=ActionType.PID)
     obs, info = env.reset()
 
-    # Get action from network
-    # obs shape: (1, 72), need to flatten to list
-    input_data = obs[0].tolist()
+    # Extract the 6 inputs needed: error_pos (3) + drone_vel (3)
+    TARGET_POS = np.array([0.0, 0.0, 1.0])
+    state_raw = obs[0]
+    drone_pos = state_raw[0:3]
+    drone_vel = state_raw[10:13]
+    error_vector = TARGET_POS - drone_pos
+    input_data = np.concatenate([error_vector, drone_vel]).tolist()
+
     output = net.activate(input_data)
 
-    # Map output from [-1, 1] to RPM [0, MAX_RPM]
-    MAX_RPM = 21702
-    action = np.array(output)
-    action = (action + 1.0) / 2.0 * MAX_RPM
-    action = np.clip(action, 0, MAX_RPM)
-    action = action.reshape(1, 4)
+    # Map output to target position for PID
+    act = np.array(output[:3])
+    offset_x = np.clip(act[0], -1.0, 1.0) * 0.2
+    offset_y = np.clip(act[1], -1.0, 1.0) * 0.2
+    offset_z = np.clip(act[2], -1.0, 1.0) * 0.2
+    target = TARGET_POS + np.array([offset_x, offset_y, offset_z])
+    target[2] = max(target[2], 0.1)
+    action = np.array([target], dtype=np.float32)
 
     # Step environment
     obs, reward, terminated, truncated, info = env.step(action)

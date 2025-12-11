@@ -1,8 +1,10 @@
 """
 DroneEvaluator: Evaluates NEAT genomes by running them in HoverAviary environment.
+The drone must hover at position [0, 0, 1] using PID control.
 """
 import sys
 import os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'gym-pybullet-drones'))
 
 import numpy as np
@@ -10,74 +12,60 @@ import neat
 from gym_pybullet_drones.envs.HoverAviary import HoverAviary
 from gym_pybullet_drones.utils.enums import DroneModel, Physics, ActionType, ObservationType
 
-
 class DroneEvaluator:
-    """
-    Evaluates NEAT genomes by controlling a drone in HoverAviary environment.
-    """
-    MAX_RPM = 21702
-    SURVIVAL_BONUS_FACTOR = 100.0
-
     def __init__(self, gui=False, max_steps=None):
-        """
-        Initialize the DroneEvaluator.
-
-        Args:
-            gui: If True, show PyBullet GUI
-            max_steps: Maximum steps per episode (None = use environment default)
-        """
         self.gui = gui
         self.max_steps = max_steps
 
     def _get_env_config(self) -> dict:
-        """Helper for environment configuration."""
         return {
             "gui": self.gui,
             "drone_model": DroneModel.CF2X,
             "physics": Physics.PYB,
             "obs": ObservationType.KIN,
-            "act": ActionType.RPM
+            "act": ActionType.PID
         }
-    
-    def _map_action(self, output: list[float]) -> np.ndarray:
+
+    def _map_action(self, output: list[float], current_pos: np.ndarray) -> np.ndarray:
         """
-        Map network output [-1, 1] to RPM [0, MAX_RPM].
-        
+        Maps network output to target position for PID controller.
+
         Args:
-            output: raw network output list.
+            output: Network output (3 values: x, y, z offsets)
+            current_pos: Current position of the drone
 
         Returns:
-            np.ndarray: Mapped and clipped action (shape: (1, 4)).
+            Target position for the PID controller (shape: (1, 3))
         """
-        action = np.array(output)
-        # Mapping from [-1, 1] to [0, MAX_RPM]
-        action = (action + 1.0) / 2.0 * self.MAX_RPM
-        # Clipping for safety (even though mapping should suffice)
-        action = np.clip(action, 0, self.MAX_RPM)
-        
-        return action.reshape(1, 4)
+        act = np.array(output[:3])
 
-    def _calculate_fitness(self, total_reward: float, steps: int, max_steps: int) -> float:
-            """
-            Calculate the final fitness value.
+        # Fixed target position for hovering
+        TARGET_POS = np.array([0.0, 0.0, 1.0])
 
-            Fitness = total reward + survival bonus (scaled by completion percentage)
-            """
-            survival_bonus = (steps / max_steps) * self.SURVIVAL_BONUS_FACTOR
-            return total_reward + survival_bonus
+        # Scale output from [-1, 1] to small offsets (max ±0.2m)
+        offset_x = np.clip(act[0], -1.0, 1.0) * 0.2
+        offset_y = np.clip(act[1], -1.0, 1.0) * 0.2
+        offset_z = np.clip(act[2], -1.0, 1.0) * 0.2
+
+        # Final target = target position + offset
+        target = TARGET_POS + np.array([offset_x, offset_y, offset_z])
+
+        # Ensure z remains positive
+        target[2] = max(target[2], 0.1)
+
+        return np.array([target], dtype=np.float32)
 
     def evaluate_genome(self, genome, config):
-        """
-        Evaluate a single NEAT genome by running it in HoverAviary.
+        if isinstance(genome, list):
+            for genome_id, g in genome:
+                g.fitness = self.evaluate_single(g, config)
+            return
+        return self.evaluate_single(genome, config)
 
-        Args:
-            genome: NEAT genome to evaluate
-            config: NEAT configuration object
+    def evaluate_single(self, genome, config):
+        net = neat.nn.RecurrentNetwork.create(genome, config)
 
-        Returns:
-            float: Fitness value (higher is better)
-        """
-        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        TARGET_POS = np.array([0.0, 0.0, 1.0])
 
         with HoverAviary(**self._get_env_config()) as env:
 
@@ -87,25 +75,47 @@ class DroneEvaluator:
                 max_steps = int(env.EPISODE_LEN_SEC * env.CTRL_FREQ)
 
             obs, info = env.reset()
-
-            total_reward = 0.0
+            cumulative_fitness = 0.0
             steps = 0
-            terminated = False
-            truncated = False
 
-            while not (terminated or truncated) and steps < max_steps:
-                
-                state = obs[0] 
-                
-                output = net.activate(state.tolist())
+            force_stop = False
 
-                action = self._map_action(output)
+            while not force_stop and steps < max_steps:
 
-                obs, reward, terminated, truncated, info = env.step(action)
+                # State extraction
+                state_raw = obs[0]
+                drone_pos = state_raw[0:3]
+                drone_vel = state_raw[10:13]
 
-                total_reward += reward
+                # Compute error to fixed target
+                error_vector = TARGET_POS - drone_pos
+
+                # Input to network (position error + drone velocity)
+                inputs = np.concatenate([error_vector, drone_vel])
+
+                # Action
+                output = net.activate(inputs)
+                action = self._map_action(output, drone_pos)
+
+                # PID controller stabilizes the drone
+                obs, _, terminated, truncated, _ = env.step(action)
+
+                # Fitness (Rewards staying close to fixed target)
+                dist_error = np.linalg.norm(error_vector)
+
+                # Exponential fitness: 1.0 if error 0, drops quickly
+                dist_score = 1.0 / (1.0 + dist_error)
+
+                cumulative_fitness += dist_score
+
+                # Early exit if drone is lost
+                if dist_error > 2.5 or drone_pos[2] < 0.05:
+                     force_stop = True
+
                 steps += 1
 
-            fitness = self._calculate_fitness(total_reward, steps, max_steps)
-            
-            return fitness
+            # Bonus if survives until the end
+            if steps >= max_steps:
+                cumulative_fitness += 50.0
+
+            return cumulative_fitness
