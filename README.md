@@ -1,3 +1,5 @@
+
+https://github.com/user-attachments/assets/3881867d-58d8-491b-97cf-5378c2f930ec
 # NeuroFly - NEAT Drone Control
 
 A hybrid control system combining [NEAT](https://neat-python.readthedocs.io/en/latest/neat_overview.html) (NeuroEvolution of Augmenting Topologies) with PID control for autonomous drone stabilization.
@@ -26,6 +28,7 @@ The current hovering task serves as a **proof of concept** - once validated, the
 
 ```
 NeuroFly/
+
 ├── src/
 │   └── neat/
 │       ├── drone_evaluator.py    # Genome evaluation in HoverAviary
@@ -69,7 +72,7 @@ Options:
 - `--config PATH`: NEAT config file (default: config-drone)
 - `--output PATH`: Output genome file (default: best_genome.pkl)
 
-### 4. Test Trained Genome
+### 2. Test Trained Genome
 
 Test genome with [PyBullet](https://pybullet.org/wordpress/) GUI:
 ```bash
@@ -80,6 +83,8 @@ Run multiple episodes:
 ```bash
 python test_genome.py best_genome.pkl --episodes 5
 ```
+
+### 
 
 ## Configuration
 
