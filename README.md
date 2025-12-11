@@ -1,5 +1,3 @@
-
-https://github.com/user-attachments/assets/3881867d-58d8-491b-97cf-5378c2f930ec
 # NeuroFly - NEAT Drone Control
 
 A hybrid control system combining [NEAT](https://neat-python.readthedocs.io/en/latest/neat_overview.html) (NeuroEvolution of Augmenting Topologies) with PID control for autonomous drone stabilization.
