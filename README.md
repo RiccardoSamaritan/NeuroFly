@@ -34,6 +34,7 @@ NeuroFly/
 ├── config-drone                   # NEAT configuration file
 ├── tests/                         # Test suite used for Test Driven Development
 ├── models/                        # Saved trained genomes in pickle format
+├── videos/                        # Recordings of drone performances after training
 ├── train_drone.py                 # Main training script
 ├── test_genome.py                 # Test genome with GUI
 ```
